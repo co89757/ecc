@@ -14,7 +14,7 @@
 
 import numpy
 import random
-import sys
+# import sys
 
  
 def createMessage(length):
@@ -29,10 +29,10 @@ def encode(m, g):
     enc = numpy.dot(m, g)%2
     return enc
  
-def decode(received, h):
+def syndrome(received, h):
     "syndrome calculation syn = r x H' or H x r' = syn' , return a numpy array"
-    syndrome = numpy.dot(h, received)%2
-    return syndrome
+    synd = numpy.dot(h, received)%2
+    return synd
  
 def noise(m, error, bit):
     "error is error rate, bit is total #corrupted bits,m is the input vector; insert noise in the message"
@@ -101,10 +101,10 @@ def hamming(length, n, error, bit):
         DED_flag = op_before ^ op_after 
         print 'noisy/received mesage: ', noisy," parity(after pollution): ", op_after 
         # -----compute syndrome , set the SEC flag ------------------------------
-        dec = decode(noisy, h)
-        print 'syndrome vector: ', dec
+        syndromes = syndrome(noisy, h)
+        print 'syndrome vector: ', syndromes
          # -------- error pattern / error location returned if only 1 error bit, if clean, error_index = -1 ----
-        error_index = findError(dec, h) 
+        error_index = findError(syndromes, h) 
 
         SEC_flag = int(error_index >= 0)  # SEC_flag 1 denotes error alert in SEC part 
 

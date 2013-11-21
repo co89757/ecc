@@ -11,7 +11,7 @@
 
 
 from itertools import izip 
-
+import copy
 
 #primitive polynomial table , represented in integer form
 primpoly = {
@@ -107,7 +107,8 @@ class FiniteField(object):
 		 return r= N mod D ; int form still 
 		 ----------------------------------------------------------------
 		 """
-
+		if D==0:
+			raise ZeroDivisionError() 
 		#nested helper function to see the degree of a ascending poly vector
 		def degree(ascending_poly):
 			while ascending_poly and ascending_poly[-1]==0:
@@ -127,16 +128,24 @@ class FiniteField(object):
 	 		Nvec = [(coeffN ^ coeffd) for coeffN,coeffd in izip(Nvec,d)] 
 	 		dN = degree(Nvec)
 	 	r = Nvec[::-1]
+	 	if r == []:
+	 		return 0 
 	 	q = q[::-1]  # switch back to descending poly vector
 		r = self._vec2num(r) # convert to numerical output 
 		return r 
 
 	def _vec2num(self,x):
 		"convert a list repr of poly to a binary number, added on Nov 15"
-		deg = len(x)-1
-		g = [2**i for i in xrange(deg,-1,-1)]
-		out = reduce(lambda s,t:s+t, [m*n for m,n in izip(x,g)])
-		return out 
+
+		# convert the x , e.g. [0,0,1,0,1] to string '00101' and then strip leading 0s 
+		# get '101' and convert it to a binary integer int(x,2) base 2 
+		assert x != []  # x is non-empty	
+		string_rep = ''.join(map(str, x))
+		# string_rep = string_rep.lstrip('0') 
+		out_num = int(string_rep, 2) 
+		return out_num 
+
+	
 					
 	def _reduce(self,x):
 		"take a input x(number) and modulo primitive poly, output a number repr of poly"
@@ -206,8 +215,8 @@ class FiniteField(object):
 
  	def showvector(self,f):
  		"f is a integer number repr of polynomial, output a vector "
- 		bstring = bin(f)
- 		bstring = bstring[2:]
+ 		bstring = bin(f) 
+ 		bstring = bstring[2:] #bstring[0] = 1 
  		vec = map(int,bstring)
  		return vec 
 
@@ -218,15 +227,17 @@ class FiniteField(object):
  		input : powr is the power of alpha i in alpha^pow fin(alpha^power) 
  		input: fin is a descending polynomial vector or a integer number 
  		output: a integer or a exponential of alpha if exp_out is True 
+ 		CAUTION: COPY the fin first 
  		-------------------------------------"""
- 		if not isinstance(fin,list):  # if fin is not a vector, convert it to a vector first
- 			fin = self.showvector(fin)
- 			N = len(fin)
+ 		fin2=copy.copy(fin)
+ 		if not isinstance(fin2,list):  # if fin2 is not a vector, convert it to a vector first
+ 			fin2 = self.showvector(fin2)
+ 			N = len(fin2)
  		else:
- 			N = len(fin)
+ 			N = len(fin2)
  		result = 0
  		for i in xrange(0,N):
- 			if fin[i] :
+ 			if fin2[i] :
  				result = self.add(self.gf_exp[(N-1-i)*powr], result) #modulo addition
 
  		if exp_out:
@@ -245,7 +256,7 @@ if __name__ == '__main__':
 	a.showvector(10)
 	print bin(a.div(0b1001,0b1110))
 
-
+	print 'numerize a vector ', a._vec2num([0,0,1,0,1])
 
 
 
