@@ -48,14 +48,87 @@ def logtable(m=4):
 
 	return table 
 			
-# minpol={4:{1:0b10011,3:0b11111}, 5:{1:0b100101,3:0b111101}, 6:{1:0b1000011,3:0b1010111},7:{1:}}
 							
+# ---------------------------- GENERAL POLYNOMIAL OPERATION FUNCTIONS added Nov 22 ALL INPUTS ARE INTEGERS-----------------------
+
+def vec2num(v):
+	"input: v as a vector and convert to a number output (binary)"
+	assert v 
+	s = ''.join( map(str,v) ) 
+	return int(s,2)   
+
+def poly_deg(v):
+	"find the degree of input polynomial represented as a integer or binary"
+	if v:
+		r = -1
+		while v:
+			v = v >> 1
+			r += 1
+		return r 
+	else:
+		return 0
+
+def poly_mul(x,y,vector_out=False): 
+		"general polynomial multiplication without reducing to primitive polynomial, return a integer form of poly" 
+		z = 0
+		i = 0
+		while (y>>i) > 0:
+			if y & (1<<i):
+				z ^= x<<i 
+			i += 1
+		if vector_out:
+			return map(int,bin(z)[2:]) 
+		else:
+			return z 
+
+def poly_add(x,y,vector_out=False):
+	"polynomial addition. input are as numbers "
+
+	z = x ^ y 
+
+	if vector_out:
+		assert z 
+		return map(int,bin(z)[2:] )
+	else:
+		return z 
+
+
+def poly_div(N, D, vector_out=False):
+	"General polynomial division.  input N,D as numbers ; output: r=N mod D "
+	if D==0:
+			raise ZeroDivisionError() 
+		#nested helper function to see the degree of a ascending poly vector
+	def degree(ascending_poly):
+		while ascending_poly and ascending_poly[-1]==0:
+			ascending_poly.pop()
+		return len(ascending_poly)-1 
+	# ---------------------------------------------------------
+	dD = poly_deg(D)
+	dN = poly_deg(N)  # degree of D and N 
+	Dvec = map(int, bin(D)[2:] )[::-1]
+	Nvec = map(int, bin(N)[2:] )[::-1] # ascending repr of poly
+	
+ 	q = [0]*dN 
+ 	while dN>=dD:
+ 		d = [0]*(dN - dD) + Dvec
+ 		q[dN-dD] = 1 
+ 		
+ 		Nvec = [(coeffN ^ coeffd) for coeffN,coeffd in izip(Nvec,d)] 
+ 		dN = degree(Nvec)
+ 	r = Nvec[::-1]
+ 	if r == []:   # D|N  
+ 		return 0  
+ 	q = q[::-1]  # switch back to descending poly vector
+	if not vector_out: # if vector out is off. turn out integer form 
+		r = int( ''.join(map(str, r)), 2) # convert to numerical output 
+	return r
 
 
 
 
 
 
+# --------------------------------------------------END OF POLYNOMIAL OPERATION FUNCTIONS ,follows the class FiniteField ------
 class FiniteField(object):
 	"""The finite field class does the follows:
 	first, use order of the generator polynomial as a argument m, and construct a GF(2^m) using logarithm table 
@@ -128,8 +201,8 @@ class FiniteField(object):
 	 		Nvec = [(coeffN ^ coeffd) for coeffN,coeffd in izip(Nvec,d)] 
 	 		dN = degree(Nvec)
 	 	r = Nvec[::-1]
-	 	if r == []:
-	 		return 0 
+	 	if r == []:   
+	 		return 0  
 	 	q = q[::-1]  # switch back to descending poly vector
 		r = self._vec2num(r) # convert to numerical output 
 		return r 
@@ -137,7 +210,7 @@ class FiniteField(object):
 	def _vec2num(self,x):
 		"convert a list repr of poly to a binary number, added on Nov 15"
 
-		# convert the x , e.g. [0,0,1,0,1] to string '00101' and then strip leading 0s 
+		# convert the x , e.g. [0,0,1,0,1] to str  ing '00101' and then strip leading 0s 
 		# get '101' and convert it to a binary integer int(x,2) base 2 
 		assert x != []  # x is non-empty	
 		string_rep = ''.join(map(str, x))
@@ -165,6 +238,7 @@ class FiniteField(object):
 # ------------------------all the operations in the GF(2^m) are modulo primpoly -------------------------
 
 	def add(self,x,y):
+		assert x>=0 and y>=0 
 		summ = x ^ y
 		reduced_sum = self._reduce(summ)
 		return reduced_sum 
@@ -173,6 +247,7 @@ class FiniteField(object):
 		return self.add(x, y)
 
 	def mul(self,x,y):
+		assert y>=0 and x >= 0 
 		x = self._reduce(x) 
 		y = self._reduce(y) #reduce inputs to modulo primpoly
 		if x==0 or y==0:
@@ -180,6 +255,7 @@ class FiniteField(object):
 		return self.gf_exp[self.gf_log[x] + self.gf_log[y]]
 
 	def div(self,x,y):
+		assert x>=0 and y>=0 
 		x = self._reduce(x) 
 		y = self._reduce(y) 
 		if y==0:
@@ -215,6 +291,7 @@ class FiniteField(object):
 
  	def showvector(self,f):
  		"f is a integer number repr of polynomial, output a vector "
+ 		# assert f>=0 
  		bstring = bin(f) 
  		bstring = bstring[2:] #bstring[0] = 1 
  		vec = map(int,bstring)
@@ -227,9 +304,14 @@ class FiniteField(object):
  		input : powr is the power of alpha i in alpha^pow fin(alpha^power) 
  		input: fin is a descending polynomial vector or a integer number 
  		output: a integer or a exponential of alpha if exp_out is True 
- 		CAUTION: COPY the fin first 
+ 		CAUTION: COPY the fin first. what if fin is 0 ?  
  		-------------------------------------"""
+ 		# assert fin    # fin cannot be zero or [] 
+ 		if fin==0 and not exp_out:  # fin(X) = 0 
+ 			return 0 
+
  		fin2=copy.copy(fin)
+
  		if not isinstance(fin2,list):  # if fin2 is not a vector, convert it to a vector first
  			fin2 = self.showvector(fin2)
  			N = len(fin2)
@@ -241,6 +323,7 @@ class FiniteField(object):
  				result = self.add(self.gf_exp[(N-1-i)*powr], result) #modulo addition
 
  		if exp_out:
+ 			assert result != 0 # log(0) is invalid 
  			return self.gf_log[result] # return the logarithm of the result polynomial 
  		return result  
 

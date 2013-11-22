@@ -37,12 +37,15 @@ def encode(m,vin):
 	minipol_3 = minpol[m][3] 
 	t = 2
 	r = m*t # number of parity bits 
-	genpoly = a._poly_mul(minipol_1, minipol_3) # generator polynomial = LCM{m1,m3} 
+	# genpoly = a._poly_mul(minipol_1, minipol_3) # generator polynomial = LCM{m1,m3} 
+	genpoly = poly_mul(minipol_1, minipol_3) # generator polynomial = LCM{m1,m3} 
 
-	numerized_vin = a._vec2num(vin) # numerized_vin is a number 
+	# numerized_vin = a._vec2num(vin) # numerized_vin is a number 
+	numerized_vin = vec2num(vin) # numerized_vin is a number 
 	numerized_vin <<= r # X^r*u(x): left shift by r bits, i.e. adding trailing 0s for parity bits plugin 
 
-	rem = a._poly_div(numerized_vin, genpoly) 
+	# rem = a._poly_div(numerized_vin, genpoly) 
+	rem = poly_div(numerized_vin, genpoly) 
 	# the number of leading 0 padding in the appendage parity vector 
 	n_pad = r - len(bin(rem)) + 2 
 	# trailing check bits vector . append it to original info vector
@@ -84,10 +87,13 @@ def syndrome(m,vin):
 	if isinstance(vin, int):
 		rec = vin 
 	else:
-		rec = a._vec2num(vin) # convert to integer form 
-	wrap_pol1 = a._poly_div(rec, minpol[m][1]) 
+		# rec = a._vec2num(vin) # convert to integer form 
+		rec = vec2num(vin) # convert to integer form 
+	# wrap_pol1 = a._poly_div(rec, minpol[m][1]) 
+	wrap_pol1 = poly_div(rec, minpol[m][1]) 
 	s1 = a.substitute(fin = wrap_pol1, powr=1) # S1 as a number 
-	wrap_pol3 = a._poly_div(rec, minpol[m][3]) 
+	# wrap_pol3 = a._poly_div(rec, minpol[m][3]) 
+	wrap_pol3 = poly_div(rec, minpol[m][3]) 
 	s3 = a.substitute(fin = wrap_pol3, powr = 3) 
 
 
@@ -148,7 +154,7 @@ def errorPoly(m,A1,A2):
 
 	# 	return inv 
 
-	inverse = lambda order,ind: 0 if ind == 0 else order-1-ind # inverse of a GF element as index 
+	inverse = lambda order,ind: 0 if ind == 0 else order-1-ind # inverse of a GF(order) element as index  
 
 
 
@@ -185,7 +191,7 @@ def correct(vin,errpol):
 	
 	rec = int(''.join(map(str, vin)), 2) # convert vin(list) to a number (int) 
 	
-	if isinstance(errpol, list):
+	if isinstance(errpol, list):  #ensure to convert errpol to a number too
 		err = int(''.join(map(str, errpol)), 2) 
 	else:
 		err = errpol 
@@ -298,8 +304,11 @@ def BCHtest(m,info_length,ber,nerr, ITERATION = 4):
 
 		if corr_v == enc: 
 			print 'correction success ! ' 
+		else:
+			print 'mis-correction....' 
 
-
+		print '------------------------------------------'
+				
 
 
 
@@ -322,38 +331,38 @@ if __name__ == '__main__':
 	# -------------- STEP-BY-STEP TEST -------------------------
 	# /////////////////////////////////////////////////////////
 	# info = [1,0,0,1,0,1,0]
-	info = [0]*256
+	# info = [1,1,0,0,0,0,1] 
 	
-	print 'info vector: ', info
-	m=9 
-	enc = encode(m, info) 
+	# print 'info vector: ', info
+	# m=4 
+	# enc = encode(m, info) 
 
-	print 'encoded vector: ', enc 
+	# print 'encoded vector: ', enc 
 
-	recv = noise(vin=enc,erate=0.2, nerr = 2)
-
-	errpattern = [x^y for x,y in izip(enc, recv)]
-	print 'received: ', recv 
-	print 'error pattern: ', errpattern
+	# # recv = noise(vin=enc,erate=0.2, nerr = 2)
+	# recv = [1,1,0,0,0,1,1,0,1,0,1,1,1,0,1] 
+	# errpattern = [x^y for x,y in izip(enc, recv)]
+	# print 'received: ', recv 
+	# print 'error pattern: ', errpattern
 	
-	#print 'receive: ', recv 
-	#print 'error pattern: ', [x^y for x,y in izip(enc,recv)] 
-	(s1,s3) = syndrome(m, recv ) 
+	# #print 'receive: ', recv 
+	# #print 'error pattern: ', [x^y for x,y in izip(enc,recv)] 
+	# (s1,s3) = syndrome(m, recv ) 
 
-	print 'syndrome (s1,s3) are : ', (s1,s3) 
+	# print 'syndrome (s1,s3) are : ', (s1,s3) 
 
-	(a1,a2) = errorLocator(m,s1,s3) 
+	# (a1,a2) = errorLocator(m,s1,s3) 
 
-	print 'errorLocator coeff: (A1,A2) = ', (a1,a2) 
+	# print 'errorLocator coeff: (A1,A2) = ', (a1,a2) 
 
-	print 'roots are', chiensearch( m,a1,a2) 
+	# print 'roots are', chiensearch( m,a1,a2) 
 
-	ep = errorPoly(m,a1,a2) 
+	# ep = errorPoly(m,a1,a2) 
 
-	print 'error poly as a number: ', ep 
-	corr_v = correct(recv,ep ) 
-	print 'corrected vector :', corr_v 
-	if corr_v == enc: print 'success!!'
+	# print 'error poly as a number: ', ep 
+	# corr_v = correct(recv,ep ) 
+	# print 'corrected vector :', corr_v 
+	# if corr_v == enc: print 'success!!' 
 
 	 
 
@@ -361,19 +370,14 @@ if __name__ == '__main__':
 
 	# ---------------- BCH WRAPPER FUNCTION TEST -----------------
 
-	 #m = int(raw_input('m as in GF(2^m) : '))
-	 #k = int(raw_input('information bits k= ')) 
-	 #BER = float(raw_input('bit error rate: ')) 
-	 #n_err = int(raw_input('max error bits: ')) 
-	 #iter_n = int(raw_input('number of iterations: '))
-	 #BCHtest(m, k, BER, n_err, iter_n)   
+	 m = int(raw_input('m as in GF(2^m) : '))
+	 k = int(raw_input('information bits k= ')) 
+	 BER = float(raw_input('bit error rate: ')) 
+	 n_err = int(raw_input('max error bits: ')) 
+	 iter_n = int(raw_input('number of iterations: '))
+	 BCHtest(m, k, BER, n_err, iter_n)   
 
 # NOTE: fails for (31,21) test . DEBUG TODO  
 
-
-
-
-
-     
 
 
