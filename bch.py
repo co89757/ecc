@@ -14,11 +14,11 @@ import copy
 # used for syndrome calculation later 
 minpol = {3:{1:11, 3:0b1011},
 		4:{1:19,3:0b11111},
-		5:{1:37,3:47},
-		6:{1:67, 3:0b1110101},
-		7:{1:137, 3:0b11110001},
-		8:{1:285, 3:0b111011101},
-		9:{1:529, 3:0b1001101001}}
+		5:{1:37,3:0b111101},
+		6:{1:67, 3:0b1010111},
+		7:{1:137, 3:0b10001111},
+		8:{1:285, 3:0b101110111},
+		9:{1:529, 3:0b1001011001}}
 
 def CreateMessage(length):
 	"create a information vector of length given, e.g. [0,0,1,1]"
@@ -322,32 +322,33 @@ if __name__ == '__main__':
 	# -------------- STEP-BY-STEP TEST -------------------------
 	# /////////////////////////////////////////////////////////
 	# info = [1,0,0,1,0,1,0]
-	info = [0,0,0,0,0,0,1]
-	# info = [0]*7 
-	print 'info vector: ', info 
-	enc = encode(m=4, vin=info) 
+	info = [0]*256
+	
+	print 'info vector: ', info
+	m=9 
+	enc = encode(m, info) 
 
 	print 'encoded vector: ', enc 
 
-	# corrupted = noise(vin=enc,erate=0.5, nerr = 2)
+	recv = noise(vin=enc,erate=0.2, nerr = 2)
 
-	# errpattern = [x^y for x,y in izip(enc, corrupted)]
-	# print 'corrupted vector up to 2 errors: ', corrupted 
-	# print 'error pattern: ', errpattern
-	recv = enc[:13]+[1,0]
-	print 'receive: ', recv 
-	print 'error pattern: ', [x^y for x,y in izip(enc,recv)] 
-	(s1,s3) = syndrome(4, recv ) 
+	errpattern = [x^y for x,y in izip(enc, recv)]
+	print 'received: ', recv 
+	print 'error pattern: ', errpattern
+	
+	#print 'receive: ', recv 
+	#print 'error pattern: ', [x^y for x,y in izip(enc,recv)] 
+	(s1,s3) = syndrome(m, recv ) 
 
 	print 'syndrome (s1,s3) are : ', (s1,s3) 
 
-	(a1,a2) = errorLocator(4,s1,s3) 
+	(a1,a2) = errorLocator(m,s1,s3) 
 
 	print 'errorLocator coeff: (A1,A2) = ', (a1,a2) 
 
-	print 'roots are', chiensearch( 4,a1,a2) 
+	print 'roots are', chiensearch( m,a1,a2) 
 
-	ep = errorPoly(4,a1,a2) 
+	ep = errorPoly(m,a1,a2) 
 
 	print 'error poly as a number: ', ep 
 	corr_v = correct(recv,ep ) 
@@ -360,12 +361,12 @@ if __name__ == '__main__':
 
 	# ---------------- BCH WRAPPER FUNCTION TEST -----------------
 
-	# m = int(raw_input('m as in GF(2^m) : '))
-	# k = int(raw_input('information bits k= ')) 
-	# BER = float(raw_input('bit error rate: ')) 
-	# n_err = int(raw_input('max error bits: ')) 
-	# iter_n = int(raw_input('number of iterations: '))
-	# BCHtest(m, k, BER, n_err, iter_n)   
+	 #m = int(raw_input('m as in GF(2^m) : '))
+	 #k = int(raw_input('information bits k= ')) 
+	 #BER = float(raw_input('bit error rate: ')) 
+	 #n_err = int(raw_input('max error bits: ')) 
+	 #iter_n = int(raw_input('number of iterations: '))
+	 #BCHtest(m, k, BER, n_err, iter_n)   
 
 # NOTE: fails for (31,21) test . DEBUG TODO  
 
